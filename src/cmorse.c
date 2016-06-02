@@ -253,7 +253,6 @@ int main( int argc, char **argv )
 		{
 			argparsed = 1;
 			if( i + 1 < argc ){
-				fprintf(stderr, "eisai malakas\n\r");
 				language = argv[i++ + 1];
 			}
 			else
