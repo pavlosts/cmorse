@@ -23,6 +23,7 @@ void help( int exitcode )
 	fprintf( stderr, "\t -p - disable automatic prosign encryption\n\r" );
 	fprintf( stderr, "\t -u - output uppercase text when decrypting\n\r" );
 	fprintf( stderr, "\t -v - show version number\n\r" );
+	fprintf( stderr, "\t -l - specify language\n\r" );
 	fprintf( stderr, "\nSee also: `man cmorse`\n\r" );
 	exit( exitcode );
 }
@@ -86,7 +87,7 @@ void encrypt( FILE *outputfile, char *str, size_t len )
 }
 
 //Morse -> Text conversion
-void decrypt( FILE *outputfile, char *str, size_t len )
+void decrypt( FILE *outputfile, char *str, size_t len, char *lang )
 {
 	char *morsechar = (char *) malloc( 1 );
 	unsigned char badc, j, spaces = 0;
@@ -121,20 +122,38 @@ void decrypt( FILE *outputfile, char *str, size_t len )
 		morsechar = (char *) realloc( morsechar, charend - i + 1 );
 		memcpy( morsechar, str + i, charend - i );
 		morsechar[charend - i] = 0;
-		for ( j = 0; j < SUPPORTED_CHARACTERS; j++ )
-		{
-			if ( !strcmp( morsechar, morse[j][1] ) )
+		/*if(strcmp(lang, "en"))
+		{*/
+			for ( j = 0; j < SUPPORTED_CHARACTERS; j++ )
 			{
-				if ( ( morse[j][0][0] == '\n' || morse[j][0][0] == '\r' ) && flags & FLAG_NOPROSIGNS )
+				if(strcmp(lang, "en") && (j <= 25 || j > 49) )
 				{
-					badc = 0;
-					continue;
-				}
+					if ( !strcmp( morsechar, morse[j][1] ) )
+					{
+						if ( ( morse[j][0][0] == '\n' || morse[j][0][0] == '\r' ) && flags & FLAG_NOPROSIGNS )
+						{
+							badc = 0;
+							continue;
+						}
 
-				fprintf( outputfile, "%c", ( flags & FLAG_UPPERCASE ) ? toupper( morse[j][0][0] ) : morse[j][0][0] );
-				badc = 0;
+						fprintf( outputfile, "%c", ( flags & FLAG_UPPERCASE ) ? toupper( morse[j][0][0] ) : morse[j][0][0] );
+						badc = 0;
+					}
+				}else if(strcmp(lang, "el") && j > 25){
+					if ( !strcmp( morsechar, morse[j][1] ) )
+					{
+						if ( ( morse[j][0][0] == '\n' || morse[j][0][0] == '\r' ) && flags & FLAG_NOPROSIGNS )
+						{
+							badc = 0;
+							continue;
+						}
+
+						fprintf( outputfile, "%c", ( flags & FLAG_UPPERCASE ) ? toupper( morse[j][0][0] ) : morse[j][0][0] );
+						badc = 0;
+					}
+				}
 			}
-		}
+		//}
 
 		if ( badc ) fprintf( stderr, "cmorse: unsupported Morse code - '%s' - c%ld\n\r", morsechar, (long) i );
 
@@ -147,9 +166,11 @@ void decrypt( FILE *outputfile, char *str, size_t len )
 int main( int argc, char **argv )
 {
 	unsigned char i;
-	char *inputstr = NULL, *inputfilename = NULL, *outputfilename = NULL, argparsed = 0;
+	char *inputstr = NULL, *inputfilename = NULL, *outputfilename = NULL, argparsed = 0, *language = "en";
 	FILE *inputfile = NULL, *outputfile = NULL;
 	size_t inputstrlen;
+
+	printf("%s", language);
 
 	//Search argv for supported arguments
 	for ( i = 1; i < argc; i++ )
@@ -227,6 +248,21 @@ int main( int argc, char **argv )
 			}
 		}
 
+		//Specify input language for decryption
+		if( !strcmp( argv[i], "-l" ) || !strcmp( argv[i], "--language" ) )
+		{
+			argparsed = 1;
+			if( i + 1 < argc ){
+				fprintf(stderr, "eisai malakas\n\r");
+				language = argv[i++ + 1];
+			}
+			else
+			{
+				fprintf( stderr, "cmorse: missing text language.\nTry -h option to get more information.\n\r" );
+				exit( 1 );
+			}
+		}
+
 		//Throw error if argument is unexpected
 		if ( !argparsed )
 		{
@@ -261,7 +297,7 @@ int main( int argc, char **argv )
 
 	//Encrypt or decrypt file
 	if ( flags & FLAG_DECRYPT )
-		decrypt( outputfile, inputstr, inputstrlen );
+		decrypt( outputfile, inputstr, inputstrlen, language );
 	else
 		encrypt( outputfile, inputstr, inputstrlen );
 
